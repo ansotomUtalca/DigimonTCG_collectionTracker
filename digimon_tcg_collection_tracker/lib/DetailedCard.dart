@@ -57,13 +57,13 @@ class DetailedCard {
       required this.tcgplayer_id});
 
   factory DetailedCard.fromJson(Map<String, dynamic> json) {
-    print("detail of card : $json");
+    //print("detail of card : $json");
     return DetailedCard(
         name: json['name'] as String,
         type: json['type'] as String,
         id: json['id'] as String,
         level: (json['level'] as int?) ?? -1,
-        play_cost: json['play_cost'] as int,
+        play_cost: (json['play_cost'] as int?) ?? -1,
         evolution_cost: (json['evolution_cost'] as int?) ?? -1,
         evolution_color: (json['evolution_color'] as String?) ?? '',
         evolution_level: (json['evolution_level'] as int?) ?? -1,
@@ -84,7 +84,7 @@ class DetailedCard {
         series: json['series'] as String,
         pretty_url: json['pretty_url'] as String,
         date_added: json['date_added'] as String,
-        tcgplayer_name: json['tcgplayer_name'] as String,
-        tcgplayer_id: json['tcgplayer_id'] as int);
+        tcgplayer_name: (json['tcgplayer_name'] as String?) ?? '',
+        tcgplayer_id: (json['tcgplayer_id'] as int?) ?? -1);
   }
 }

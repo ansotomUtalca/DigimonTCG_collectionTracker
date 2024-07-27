@@ -4,9 +4,9 @@ class CountedCard {
   late DetailedCard card;
   int quantity = 0;
 
-  CountedCard(DetailedCard card, int quantity) {
-    card = card;
-    quantity = quantity;
+  CountedCard(DetailedCard _card, int _quantity) {
+    card = _card;
+    quantity = _quantity;
   }
 
   void addCard() {
@@ -22,5 +22,12 @@ class CountedCard {
       return true;
     }
     return false;
+  }
+
+  Map<String, Object> toMap() {
+    return {
+      'cardId': card.id,
+      'quantity': quantity,
+    };
   }
 }

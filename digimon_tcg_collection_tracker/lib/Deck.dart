@@ -7,8 +7,8 @@ class Deck {
   List<CountedCard> cards = [];
   List<DetailedCard> eggCards = [];
 
-  Deck(String name) {
-    name = name;
+  Deck(String _name) {
+    name = _name;
   }
 
   void addCard(DetailedCard newcard) {
@@ -28,6 +28,10 @@ class Deck {
   void removeEgg() {}
 
   void removeCard() {}
+
+  void editName(String text) {
+    name = text;
+  }
 
   //return true if there's space for more eggs
   bool checkEggLimit() {
