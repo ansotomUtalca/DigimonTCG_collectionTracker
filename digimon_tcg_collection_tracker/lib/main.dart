@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:digimon_tcg_collection_tracker/TradingCard.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 const String assetadd = 'lib/images/plus.svg';
 Widget svgIcon =
@@ -201,7 +202,7 @@ class MyApp extends StatelessWidget {
             ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 215, 106, 16)),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Digimon TCG Collection Tracker'),
     );
   }
 }
@@ -221,12 +222,18 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    initialization();
     futureCards = fetchCards().then((value) {
       cards = value;
       return value;
     });
     fetchFullDetailedList();
     print(fullInventory.length);
+  }
+
+  void initialization() async {
+    print('go!');
+    FlutterNativeSplash.remove();
   }
 
   void fetchBoosterPacks() async {
@@ -271,7 +278,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => DecksList(
-        title: 'Your Decks',
+        title: 'Tus Mazos',
       ),
     ));
   }
@@ -286,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _goCollection() {
     setState(() {});
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => Collection(title: 'Mi colleccion'),
+      builder: (context) => Collection(title: 'Mi coleccion'),
     ));
   }
 
@@ -325,7 +332,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                   return const CircularProgressIndicator();
                 }),
-            ElevatedButton(onPressed: test, child: const Text(':)')),
+            ElevatedButton(
+                onPressed: test, child: const Text('Actualizar sobres/packs')),
           ],
         ),
         drawer: Drawer(
@@ -404,7 +412,14 @@ class DecksListState extends State<DecksList> {
         ElevatedButton(
             onPressed: () => _goDeckDetail(d),
             style: ButtonStyle(fixedSize: buttonSize, shape: buttonBorder),
-            child: SizedBox(child: Text(d.name), width: 400, height: 40)),
+            child: SizedBox(
+                child: Text(
+                  d.name,
+                  textScaler: TextScaler.linear(2),
+                  textAlign: TextAlign.center,
+                ),
+                width: 400,
+                height: 40)),
       );
     }
     return decklist;
@@ -421,7 +436,7 @@ class DecksListState extends State<DecksList> {
   Widget build(BuildContext context) {
     context = context;
     return Scaffold(
-        appBar: AppBar(backgroundColor: Colors.blue),
+        appBar: AppBar(backgroundColor: Colors.blue, title: Text(widget.title)),
         body: Center(
             child: Column(children: [
           Expanded(child: ListView(children: showDeckList())),
@@ -448,26 +463,81 @@ class DeckDetail extends StatefulWidget {
 
 class DeckDetailState extends State<DeckDetail> {
   List<Widget> showDeckList() {
-    List<Widget> deckCards = [];
+    List<Widget> list = [];
     for (Deck d in usuario.decks) {
-      if (selected == d.name) {
-        for (CountedCard c in d.cards) {
-          deckCards
-              .add(SizedBox(width: 400, height: 40, child: Text(c.card.name)));
+      if (d.name == selected) {
+        for (CountedCard cc in d.cards) {
+          DetailedCard c = cc.card;
+          list.add(Row(
+            children: [
+              SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Text(
+                    cc.quantity.toString(),
+                    textScaler: TextScaler.linear(2),
+                    textAlign: TextAlign.center,
+                  )),
+              ElevatedButton(
+                  onPressed: () => callImage(c.name, c.id, context),
+                  style:
+                      ButtonStyle(fixedSize: buttonSize, shape: buttonBorder),
+                  child: SizedBox(
+                      child: DecoratedBox(
+                          decoration: boxDecoration(c.color),
+                          child: Text(
+                            c.name,
+                            textScaler: TextScaler.linear(1.4),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.black),
+                          )),
+                      width: 360,
+                      height: 40)),
+            ],
+          ));
         }
       }
     }
-    return deckCards;
+    return list;
+  }
+
+  MaterialStateProperty<Size> buttonSize =
+      const MaterialStatePropertyAll(Size(360, 40));
+
+  MaterialStateProperty<RoundedRectangleBorder> buttonBorder =
+      MaterialStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(5.0)));
+
+  void _goAddDeckCards() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+          builder: (context) => DeckAddScreen(
+            title: 'Agrega cartas',
+          ),
+        ))
+        .then((value) => setState(() {}));
   }
 
   @override
   Widget build(BuildContext context) {
     context = context;
     return Scaffold(
-        appBar: AppBar(backgroundColor: Colors.blue),
-        body: const Center(
+        appBar: AppBar(backgroundColor: Colors.blue, title: Text(widget.title)),
+        body: Center(
             child: Column(
-          children: [],
+          children: [
+            Expanded(child: ListView(children: showDeckList())),
+            Align(
+                child: OverflowBar(
+                  overflowAlignment: OverflowBarAlignment.end,
+                  children: [
+                    TextButton(
+                        onPressed: _goAddDeckCards,
+                        child: Text('Agregar Cartas desde Coleccion'))
+                  ],
+                ),
+                alignment: AlignmentDirectional.bottomCenter)
+          ],
         )));
   }
 }
@@ -495,12 +565,23 @@ class PackListState extends State<PackList> {
 
   List<Widget> showPacks() {
     List<Widget> list = [];
+    List<Widget> rowList = [];
     for (CardSet c in cardSets) {
       list.add(ElevatedButton(
           onPressed: () => _goPackDetail(c.packName), child: Text(c.packName)));
+      if (list.length == 4) {
+        rowList.add(Row(
+          children: [SizedBox(width: 35), list[0], list[1], list[2], list[3]],
+        ));
+        list = [];
+      }
+    }
+    if (list.length == 3) {
+      rowList
+          .add(Row(children: [SizedBox(width: 75), list[0], list[1], list[2]]));
     }
 
-    return list;
+    return rowList;
   }
 
   @override
@@ -509,6 +590,7 @@ class PackListState extends State<PackList> {
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.blue,
+          title: Text(widget.title),
         ),
         body: Center(
             child: Column(
@@ -541,6 +623,8 @@ class PackDetailState extends State<PackDetail> {
                         decoration: boxDecoration(c.color),
                         child: Text(
                           c.name,
+                          textScaler: TextScaler.linear(1.4),
+                          textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.black),
                         )),
                     width: 400,
@@ -563,7 +647,10 @@ class PackDetailState extends State<PackDetail> {
   Widget build(BuildContext context) {
     context = context;
     return Scaffold(
-        appBar: AppBar(backgroundColor: Colors.blue),
+        appBar: AppBar(
+          backgroundColor: Colors.blue,
+          title: Text(widget.title),
+        ),
         body: Center(
             child: ListView(
           children: showPackList(),
@@ -585,13 +672,22 @@ class CollectionState extends State<Collection> {
     usuario.collection[index].addCard();
   }
 
+  bool packSelection = false;
+
   List<Widget> showCollectionList() {
     List<Widget> list = [];
     for (CountedCard cc in usuario.collection) {
       DetailedCard c = cc.card;
       list.add(Row(
         children: [
-          SizedBox(width: 40, height: 40, child: Text(cc.quantity.toString())),
+          SizedBox(
+              width: 40,
+              height: 40,
+              child: Text(
+                cc.quantity.toString(),
+                textScaler: TextScaler.linear(2),
+                textAlign: TextAlign.center,
+              )),
           ElevatedButton(
               onPressed: () => callImage(c.name, c.id, context),
               style: ButtonStyle(fixedSize: buttonSize, shape: buttonBorder),
@@ -600,6 +696,8 @@ class CollectionState extends State<Collection> {
                       decoration: boxDecoration(c.color),
                       child: Text(
                         c.name,
+                        textScaler: TextScaler.linear(1.4),
+                        textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.black),
                       )),
                   width: 360,
@@ -625,24 +723,68 @@ class CollectionState extends State<Collection> {
             title: 'Agrega cartas',
           ),
         ))
-        .then((value) => setState(() {}));
+        .then((value) => setState(() {
+              packSelection = false;
+            }));
+  }
+
+  List<Widget> showPacks() {
+    List<Widget> list = [];
+    List<Widget> rowList = [];
+    for (CardSet c in cardSets) {
+      list.add(ElevatedButton(
+          onPressed: () => _goAddCards(c.packName),
+          child: Text(
+            c.packName,
+          )));
+      if (list.length == 4) {
+        rowList.add(Row(
+          children: [SizedBox(width: 35), list[0], list[1], list[2], list[3]],
+        ));
+        list = [];
+      }
+    }
+    if (list.length == 3) {
+      rowList
+          .add(Row(children: [SizedBox(width: 75), list[0], list[1], list[2]]));
+    }
+
+    return rowList;
+  }
+
+  List<Widget> alternateList() {
+    if (packSelection) {
+      return showPacks();
+    } else {
+      return showCollectionList();
+    }
+  }
+
+  void flipList() {
+    packSelection = true;
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     context = context;
     return Scaffold(
-        appBar: AppBar(backgroundColor: Colors.blue),
+        appBar: AppBar(
+          backgroundColor: Colors.blue,
+          title: Text(widget.title),
+        ),
         body: Center(
             child: Column(children: [
-          Expanded(child: ListView(children: showCollectionList())),
+          Expanded(child: ListView(children: alternateList())),
           Align(
               child: OverflowBar(
                 overflowAlignment: OverflowBarAlignment.end,
                 children: [
                   TextButton(
                       onPressed: () => _goAddCards(''),
-                      child: Text('Agregar Cartas nuevas'))
+                      child: Text('Agregar Cartas nuevas')),
+                  TextButton(
+                      onPressed: flipList, child: Text('Agregar desde Pack'))
                 ],
               ),
               alignment: AlignmentDirectional.bottomCenter)
@@ -694,6 +836,8 @@ class CardAddScreenState extends State<CardAddScreen> {
                         decoration: boxDecoration(c.color),
                         child: Text(
                           c.name,
+                          textScaler: TextScaler.linear(1.4),
+                          textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.black),
                         )),
                     width: 360,
@@ -716,6 +860,8 @@ class CardAddScreenState extends State<CardAddScreen> {
                     decoration: boxDecoration(dc.color),
                     child: Text(
                       dc.name,
+                      textScaler: TextScaler.linear(1.4),
+                      textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.black),
                     )),
                 width: 360,
@@ -731,7 +877,92 @@ class CardAddScreenState extends State<CardAddScreen> {
   Widget build(BuildContext context) {
     context = context;
     return Scaffold(
-        appBar: AppBar(backgroundColor: Colors.blue),
+        appBar: AppBar(
+          backgroundColor: Colors.blue,
+          title: Text(widget.title),
+        ),
+        body: Center(
+            child: ListView(
+          children: showCardList(),
+        )));
+  }
+}
+
+class DeckAddScreen extends StatefulWidget {
+  const DeckAddScreen({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<DeckAddScreen> createState() => DeckAddScreenState();
+}
+
+class DeckAddScreenState extends State<DeckAddScreen> {
+  void addQuantity(CountedCard newcard) {
+    print(selected);
+    print(newcard.card.name);
+    for (Deck d in usuario.decks) {
+      if (d.name == selected) {
+        print(d.name);
+        for (CountedCard c in d.cards) {
+          if (c.card.id == newcard.card.id) {
+            if (c.quantity < newcard.quantity) {
+              d.addCard(c.card);
+            }
+            return;
+          }
+        }
+        print('added!');
+        d.addCard(newcard.card);
+      }
+    }
+  }
+
+  MaterialStateProperty<Size> buttonSize =
+      const MaterialStatePropertyAll(Size(320, 40));
+
+  MaterialStateProperty<RoundedRectangleBorder> buttonBorder =
+      MaterialStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)));
+
+  List<Widget> showCardList() {
+    List<Widget> cards = [];
+    for (CountedCard cc in usuario.collection) {
+      cards.add(Row(children: [
+        SizedBox(
+            width: 40,
+            height: 40,
+            child: Text(cc.quantity.toString(),
+                textScaler: TextScaler.linear(2), textAlign: TextAlign.center)),
+        ElevatedButton(
+            onPressed: () => callImage(cc.card.name, cc.card.id, context),
+            style: ButtonStyle(fixedSize: buttonSize, shape: buttonBorder),
+            child: SizedBox(
+                child: DecoratedBox(
+                    decoration: boxDecoration(cc.card.color),
+                    child: Text(
+                      cc.card.name,
+                      textScaler: TextScaler.linear(1.4),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black),
+                    )),
+                width: 320,
+                height: 40)),
+        IconButton(
+            onPressed: () => addQuantity(cc), icon: svgIcon, iconSize: 40)
+      ]));
+    }
+    return cards;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    context = context;
+    return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.blue,
+          title: Text(widget.title),
+        ),
         body: Center(
             child: ListView(
           children: showCardList(),
