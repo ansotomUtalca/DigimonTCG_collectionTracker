@@ -1,9 +1,11 @@
 import 'dart:convert';
 
+import 'package:digimon_tcg_collection_tracker/CardDatabaseHelper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:digimon_tcg_collection_tracker/BaseCardList.dart';
 import 'package:digimon_tcg_collection_tracker/CardSet.dart';
 import 'package:digimon_tcg_collection_tracker/CountedCard.dart';
+import 'package:digimon_tcg_collection_tracker/StoredCard.dart';
 import 'package:digimon_tcg_collection_tracker/Deck.dart';
 import 'package:digimon_tcg_collection_tracker/DetailedCard.dart';
 import 'package:digimon_tcg_collection_tracker/User.dart';
@@ -19,6 +21,7 @@ Widget svgIcon =
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 
@@ -162,11 +165,6 @@ Future<List<DetailedCard>> fetchCardSet(String packName, String newName) async {
         .map((dynamic item) =>
             DetailedCard.fromJson(item as Map<String, dynamic>))
         .toList();
-    /*
-    for (DetailedCard c in pack) {
-      fullInventory.add(c);
-    }
-    */
     cardSets.add(CardSet(newName, pack));
     return pack;
   } else {
@@ -183,21 +181,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Collection Tracker',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme:
             ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 215, 106, 16)),
         useMaterial3: true,
@@ -216,12 +199,19 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+late CardDatabaseHelper dbHelper;
+
 class _MyHomePageState extends State<MyHomePage> {
   late Future<List<TradingCard>> futureCards;
 
   @override
   void initState() {
     super.initState();
+    dbHelper = CardDatabaseHelper();
+    dbHelper.initDB().whenComplete(() async {
+      setState(() {});
+    });
+
     initialization();
     futureCards = fetchCards().then((value) {
       cards = value;
@@ -301,12 +291,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -314,26 +298,23 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         body: Column(
           children: <Widget>[
-            FutureBuilder<List<TradingCard>>(
-                future: futureCards,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return Expanded(
-                        child: ListView.builder(
-                            itemCount: 20,
-                            itemBuilder: (context, index) {
-                              final card = snapshot.data![index];
-                              return ListTile(title: Text(card.name));
-                            }
-                            //on tap stuff
-                            ));
-                  } else if (snapshot.hasError) {
-                    return Text('${snapshot.error}');
-                  }
-                  return const CircularProgressIndicator();
-                }),
-            ElevatedButton(
-                onPressed: test, child: const Text('Actualizar sobres/packs')),
+            SizedBox(height: 50, width: 100),
+            SizedBox(
+              height: 600,
+              width: 400,
+              child: Text(
+                  'Bienvenido! Usa el menu a la izquierda para agregar cartas a tu coleccion, y usa el boton abajo para actualizar los booster packs.',
+                  textScaler: TextScaler.linear(1.8),
+                  textAlign: TextAlign.center),
+            ),
+            OverflowBar(
+              overflowAlignment: OverflowBarAlignment.end,
+              children: [
+                TextButton(
+                    onPressed: test,
+                    child: const Text('Actualizar sobres/packs'))
+              ],
+            ),
           ],
         ),
         drawer: Drawer(

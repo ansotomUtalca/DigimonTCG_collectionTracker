@@ -10,3 +10,4 @@ La otra opción permite al jugador ver una lista de todos las cartas pertenecien
 
 Cada vez se este viendo una lista de cartas, esta la opción de hacer click para ver una imagen de la carta y sus detalles.
 
+URL presentacion: https://youtu.be/li0be0GsjoE
